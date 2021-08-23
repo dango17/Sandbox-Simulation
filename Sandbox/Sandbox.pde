@@ -30,8 +30,8 @@ void setup()
  }
  
  //Add some sand into world 
- for(int y=100; y<100; ++y) {
-  for(int x=100; x<110; ++x) {
+ for(int y=100; y<110; ++y) {
+ for(int x=100; x<110; ++x) {
     //Set sand position in world
     world[coord(x,y)] = SAND; 
   }
@@ -40,6 +40,32 @@ void setup()
 
 void draw()
 {  
+  
+  //Update our world 
+  for (int y=0; y<HEIGHT; ++y){
+    for (int x=0; x<WIDTH; ++x){
+      int coordHere = coord(x,y); 
+      //Check each pixel avaliable in world 
+      byte whatHere = world[coordHere]; 
+      if(whatHere == AIR || whatHere == ROCK) continue; 
+      
+      //Tile is free, move down 
+      if(tileIsFree(x, y+1))
+      {  
+        move(x, y, x, y+1); 
+      } 
+      //next, try to move down or left
+      else if(tileIsFree(x-1, y+1))
+      { 
+        move(x, y, x-1, y+1); 
+      } 
+      else if (tileIsFree(x+1, y+1))
+      { 
+        move(x, y, x+1, y+1); 
+      } 
+    }
+  }
+  
   //Draw our world
   worldGfx.beginDraw(); 
   worldGfx.loadPixels();
@@ -69,6 +95,23 @@ void draw()
   scale(SCALE_FACTOR); 
   image(worldGfx, 0, 0); 
 } 
+
+
+void move(int fromX, int fromY, int toX, int toY)
+{ 
+  int fromCoord = coord(fromX, fromY);
+  int toCoord = coord(toX, toY); 
+  world[toCoord] = world[fromCoord]; 
+  world[fromCoord] = AIR;
+} 
+
+//Check if tiles are free for our elements to move into
+boolean tileIsFree(int x, int y) 
+{  
+  //Dont want pixels to fall outside the boundarys of the screen
+   if(x<0 || x>=WIDTH || y<0 || y>=HEIGHT) return false; 
+   return world[coord(x,y)] == AIR;
+}
 
 //Set our world array 
 int coord(int x, int y)
