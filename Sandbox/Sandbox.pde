@@ -24,9 +24,16 @@ void setup()
   //Set a floor for elements to land on
   for(int y=HEIGHT-10; y<HEIGHT; ++y) {
   for(int x=0; x<WIDTH; ++x) {
-    
-    //Set our world boundarys
+    //Set our world boundary for the rock (Floor)
     world[coord(x,y)] = ROCK; 
+  }
+ }
+ 
+ //Add some sand into world 
+ for(int y=100; y<100; ++y) {
+  for(int x=100; x<110; ++x) {
+    //Set sand position in world
+    world[coord(x,y)] = SAND; 
   }
  }
 } 
