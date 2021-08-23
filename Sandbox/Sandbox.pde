@@ -7,9 +7,14 @@ final byte ROCK = 1;
 final byte SAND = 2; 
 final byte WATER = 3; 
 
+//Store our world elements 
 byte[] world; 
 
+//GPU
 PGraphics worldGfx; 
+
+//Has Moved Boolean
+boolean[] hasMovedFlag; 
 
 //Called once at start of the program
 void setup()
@@ -20,6 +25,7 @@ void setup()
   ((PGraphicsOpenGL)g).textureSampling(2); //Stop processing applying smoothness when scaling
   
   world = new byte[WIDTH*HEIGHT]; 
+  hasMovedFlag = new boolean[WIDTH*HEIGHT]; 
   
   //Set a floor for elements to land on
   for(int y=HEIGHT-10; y<HEIGHT; ++y) {
@@ -35,16 +41,47 @@ void setup()
     //Set sand position in world
     world[coord(x,y)] = SAND; 
   }
- }
+ } 
+ 
+ //Slow down frame rate to 1-fps
+ frameRate(30); 
 } 
 
 void draw()
 {  
   
-  //Update our world 
+  //On Right Click down
+  if(mousePressed)
+  { 
+    int mouseXInWorld = mouseX / SCALE_FACTOR; 
+    int mouseYInWorld = mouseY / SCALE_FACTOR; 
+    int mouseCoord = coord(mouseXInWorld, mouseYInWorld); 
+    
+    if(mouseButton == LEFT)
+    { 
+      world[mouseCoord] = SAND; 
+    } 
+    else if (mouseButton == RIGHT)
+    { 
+      world[mouseCoord] = WATER;
+    } 
+    
+  } 
+  
+  
+  //Clear hasMovedFlag 
   for (int y=0; y<HEIGHT; ++y){
     for (int x=0; x<WIDTH; ++x){
+      hasMovedFlag[coord(x,y)] = false;
+    }
+  }
+  
+  
+  //Update our world 
+  for (int y=HEIGHT-1; y>=0; --y){
+    for (int x=0; x<WIDTH; ++x){
       int coordHere = coord(x,y); 
+      if(hasMovedFlag[coordHere]) continue; 
       //Check each pixel avaliable in world 
       byte whatHere = world[coordHere]; 
       if(whatHere == AIR || whatHere == ROCK) continue; 
@@ -54,18 +91,35 @@ void draw()
       {  
         move(x, y, x, y+1); 
       } 
-      //next, try to move down or left
-      else if(tileIsFree(x-1, y+1))
+      
+      //Randomly check if down or right is free to move too
+      boolean checkLeftFirst = random(1f) < 0.5f; 
+      
+      if(checkLeftFirst)
       { 
-        move(x, y, x-1, y+1); 
-      } 
-      else if (tileIsFree(x+1, y+1))
+         if(tileIsFree(x-1, y+1))
+         { 
+         move(x, y, x-1, y+1); 
+         } 
+         else if (tileIsFree(x+1, y+1))
+         { 
+         move(x, y, x+1, y+1); 
+         } 
+      }   
+      else
       { 
-        move(x, y, x+1, y+1); 
-      } 
+        if(tileIsFree(x+1, y+1))
+        { 
+          move(x, y, x+1, y+1);
+        } 
+        else if(tileIsFree(x-1, y+1))
+        { 
+          move(x, y, x-1, y+1); 
+        } 
+      }
     }
-  }
-  
+}
+    
   //Draw our world
   worldGfx.beginDraw(); 
   worldGfx.loadPixels();
@@ -94,15 +148,23 @@ void draw()
   
   scale(SCALE_FACTOR); 
   image(worldGfx, 0, 0); 
+  }
+
+
+void mouseDragged()
+{
+  
 } 
 
-
+//Move our pixels within the world
 void move(int fromX, int fromY, int toX, int toY)
 { 
   int fromCoord = coord(fromX, fromY);
   int toCoord = coord(toX, toY); 
   world[toCoord] = world[fromCoord]; 
   world[fromCoord] = AIR;
+  hasMovedFlag[toCoord] = true;
+  hasMovedFlag[fromCoord] = true;
 } 
 
 //Check if tiles are free for our elements to move into
