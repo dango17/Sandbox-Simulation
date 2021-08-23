@@ -17,22 +17,25 @@ void setup()
   size(1024, 1024, P3D); 
   
   worldGfx = createGraphics(WIDTH, HEIGHT); 
+  ((PGraphicsOpenGL)g).textureSampling(2); //Stop processing applying smoothness when scaling
   
   world = new byte[WIDTH*HEIGHT]; 
   
   //Set a floor for elements to land on
-  int y = HEIGHT-1; //Bottom Row
-  for(int x=0; x<WIDTH; ++x)
-  {  
+  for(int y=HEIGHT-10; y<HEIGHT; ++y) {
+  for(int x=0; x<WIDTH; ++x) {
+    
     //Set our world boundarys
     world[coord(x,y)] = ROCK; 
   }
+ }
 } 
 
 void draw()
 {  
   //Draw our world
-  //worldGfx.beginDraw(); 
+  worldGfx.beginDraw(); 
+  worldGfx.loadPixels();
   for (int y=0; y<HEIGHT; ++y){
     for (int x=0; x<WIDTH; ++x){
       int coordHere = coord(x,y);
@@ -51,14 +54,13 @@ void draw()
     
     worldGfx.pixels[coordHere] = c; 
   }
-}
+ }
   
   worldGfx.updatePixels(); 
-  //worldGfx.endDraw(); 
+  worldGfx.endDraw(); 
   
   scale(SCALE_FACTOR); 
-  image(worldGfx, 0, 0);
-  
+  image(worldGfx, 0, 0); 
 } 
 
 //Set our world array 
