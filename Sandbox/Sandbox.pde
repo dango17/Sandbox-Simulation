@@ -57,10 +57,12 @@ void draw()
     int mouseYInWorld = mouseY / SCALE_FACTOR; 
     int mouseCoord = coord(mouseXInWorld, mouseYInWorld); 
     
+    //Left Click down = Sand
     if(mouseButton == LEFT)
     { 
       world[mouseCoord] = SAND; 
     } 
+    //Right Click donw = water
     else if (mouseButton == RIGHT)
     { 
       world[mouseCoord] = WATER;
@@ -83,11 +85,11 @@ void draw()
       int coordHere = coord(x,y); 
       if(hasMovedFlag[coordHere]) continue; 
       //Check each pixel avaliable in world 
-      byte whatHere = world[coordHere]; 
-      if(whatHere == AIR || whatHere == ROCK) continue; 
+      byte SubstanceHere = world[coordHere]; 
+      if(SubstanceHere == AIR || SubstanceHere == ROCK) continue; 
       
       //Tile is free, move down 
-      if(tileIsFree(x, y+1))
+      if(canMove(SubstanceHere, x, y+1))
       {  
         move(x, y, x, y+1); 
       } 
@@ -97,22 +99,22 @@ void draw()
       
       if(checkLeftFirst)
       { 
-         if(tileIsFree(x-1, y+1))
+         if(canMove(SubstanceHere, x-1, y+1))
          { 
          move(x, y, x-1, y+1); 
          } 
-         else if (tileIsFree(x+1, y+1))
+         else if (canMove(SubstanceHere, x+1, y+1))
          { 
          move(x, y, x+1, y+1); 
          } 
       }   
       else
       { 
-        if(tileIsFree(x+1, y+1))
+        if(canMove(SubstanceHere, x+1, y+1))
         { 
           move(x, y, x+1, y+1);
         } 
-        else if(tileIsFree(x-1, y+1))
+        else if(canMove(SubstanceHere, x-1, y+1))
         { 
           move(x, y, x-1, y+1); 
         } 
@@ -161,18 +163,26 @@ void move(int fromX, int fromY, int toX, int toY)
 { 
   int fromCoord = coord(fromX, fromY);
   int toCoord = coord(toX, toY); 
+  
+  byte otherSubstance = world[toCoord]; 
+  
   world[toCoord] = world[fromCoord]; 
-  world[fromCoord] = AIR;
+  world[fromCoord] = otherSubstance;
+  
   hasMovedFlag[toCoord] = true;
   hasMovedFlag[fromCoord] = true;
 } 
 
 //Check if tiles are free for our elements to move into
-boolean tileIsFree(int x, int y) 
+boolean canMove(byte substance, int x, int y) 
 {  
   //Dont want pixels to fall outside the boundarys of the screen
    if(x<0 || x>=WIDTH || y<0 || y>=HEIGHT) return false; 
-   return world[coord(x,y)] == AIR;
+   byte otherSubstance = world[coord(x,y)]; 
+   if(otherSubstance == AIR) return true; 
+   //precipitate the sand when with water 
+   if(substance == SAND && otherSubstance == WATER && random(1f)<0.5f) return true; 
+   return false; 
 }
 
 //Set our world array 
