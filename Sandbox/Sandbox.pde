@@ -57,7 +57,7 @@ void setup()
 void draw()
 {  
   
-  //On Right Click down
+  //Mouse Button Logic
   if(mousePressed)
   { 
     int mouseXInWorld = mouseX / SCALE_FACTOR; 
@@ -68,6 +68,10 @@ void draw()
     { 
       place(SAND, mouseXInWorld, mouseYInWorld);
     } 
+    else if(mouseButton == CENTER)
+    { 
+      place(ROCK, mouseXInWorld, mouseYInWorld); 
+    }
     //Right Click donw = water
     else if (mouseButton == RIGHT)
     { 
