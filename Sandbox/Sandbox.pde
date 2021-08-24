@@ -16,6 +16,12 @@ PGraphics worldGfx;
 //Has Moved Boolean
 boolean[] hasMovedFlag; 
 
+//Track Momentum of each pixel 
+int[] momentum; 
+
+//
+int brushSize = 1;
+
 //Called once at start of the program
 void setup()
 { 
@@ -26,6 +32,7 @@ void setup()
   
   world = new byte[WIDTH*HEIGHT]; 
   hasMovedFlag = new boolean[WIDTH*HEIGHT]; 
+  momentum = new int[WIDTH*HEIGHT];
   
   //Set a floor for elements to land on
   for(int y=HEIGHT-10; y<HEIGHT; ++y) {
@@ -55,17 +62,16 @@ void draw()
   { 
     int mouseXInWorld = mouseX / SCALE_FACTOR; 
     int mouseYInWorld = mouseY / SCALE_FACTOR; 
-    int mouseCoord = coord(mouseXInWorld, mouseYInWorld); 
     
     //Left Click down = Sand
     if(mouseButton == LEFT)
     { 
-      world[mouseCoord] = SAND; 
+      place(SAND, mouseXInWorld, mouseYInWorld);
     } 
     //Right Click donw = water
     else if (mouseButton == RIGHT)
     { 
-      world[mouseCoord] = WATER;
+      place(WATER, mouseXInWorld, mouseYInWorld);
     } 
     
   } 
@@ -95,8 +101,12 @@ void draw()
       } 
       
       //Randomly check if down or right is free to move too
-      boolean checkLeftFirst = random(1f) < 0.5f; 
+      boolean checkLeftFirst; 
+      if(momentum[coordHere] == -1) {checkLeftFirst = true; }
+      else if(momentum[coordHere] == 1) {checkLeftFirst = false; }
+      else { checkLeftFirst = (random(1f)<0.5f); }
       
+      //Sand Pixel behaviour
       if(checkLeftFirst)
       { 
          if(canMove(SubstanceHere, x-1, y+1))
@@ -118,8 +128,36 @@ void draw()
         { 
           move(x, y, x-1, y+1); 
         } 
+      } 
+      
+      //Water Pixel behaviour
+      if(SubstanceHere == WATER && y<HEIGHT-1 && world[coord(x,y+1)] == WATER)
+      { 
+        //Above layer of water, spead the pixels out across them left & right
+       if(checkLeftFirst)
+       { 
+         if(canMove(SubstanceHere, x-1, y))
+         { 
+         move(x, y, x-1, y); 
+         } 
+         else if (canMove(SubstanceHere, x+1, y))
+         { 
+         move(x, y, x+1, y); 
+         } 
+      }  
+      else 
+      { 
+        if(canMove(SubstanceHere, x+1, y))
+        { 
+          move(x, y, x+1, y); 
+        }  
+        else if(canMove(SubstanceHere, x+1, y))
+        { 
+          move(x, y, x-1, y); 
+        } 
       }
     }
+  }
 }
     
   //Draw our world
@@ -153,10 +191,30 @@ void draw()
   }
 
 
-void mouseDragged()
-{
-  
+//Paint Brush Function 
+void mouseWheel(MouseEvent event)
+{  
+   if(event.getCount() < 0)
+   { 
+     ++brushSize; 
+   } 
+   else
+   { 
+     --brushSize; 
+     if(brushSize <=0) { brushSize = 1; } 
+   }  
+    println("Brush size:" + brushSize); 
 } 
+
+void place(byte substance, int xPos, int yPos)
+{  
+  for(int y=max(0, yPos-brushSize); y<min(HEIGHT-1, yPos+brushSize); ++y){
+    for(int x=max(0, xPos-brushSize); x<min(HEIGHT-1, xPos+brushSize); ++x){
+      world[coord(x,y)] = substance; 
+  }
+ }
+}  
+  
 
 //Move our pixels within the world
 void move(int fromX, int fromY, int toX, int toY)
@@ -171,6 +229,12 @@ void move(int fromX, int fromY, int toX, int toY)
   
   hasMovedFlag[toCoord] = true;
   hasMovedFlag[fromCoord] = true;
+  
+  momentum[fromCoord] = 0; 
+  
+  if (toX > fromX) { momentum[toCoord] = 1; }
+  else if (toX < fromX) { momentum[toCoord] = -1; }
+  else { momentum[toCoord] = 0; }
 } 
 
 //Check if tiles are free for our elements to move into
@@ -180,6 +244,7 @@ boolean canMove(byte substance, int x, int y)
    if(x<0 || x>=WIDTH || y<0 || y>=HEIGHT) return false; 
    byte otherSubstance = world[coord(x,y)]; 
    if(otherSubstance == AIR) return true; 
+   
    //precipitate the sand when with water 
    if(substance == SAND && otherSubstance == WATER && random(1f)<0.5f) return true; 
    return false; 
