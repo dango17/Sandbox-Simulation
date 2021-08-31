@@ -7,6 +7,7 @@ final byte ROCK = 1;
 final byte SAND = 2; 
 final byte WATER = 3; 
 final byte OIL = 4;
+final byte FIRE = 5; 
 
 //Store our world elements 
 byte[] world; 
@@ -17,11 +18,15 @@ PGraphics worldGfx;
 //Has Moved Boolean
 boolean[] hasMovedFlag; 
 
+//
+boolean fireSpreads; 
+
 //Track Momentum of each pixel 
 int[] momentum; 
 
 //Brush size interger
 int brushSize = 1;
+boolean brushToggle; 
 
 //Called once at start of the program
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -63,7 +68,7 @@ void draw()
     //Left Click down = Sand
     if(mouseButton == LEFT)
     { 
-      place(SAND, mouseXInWorld, mouseYInWorld);
+      place(brushToggle ? OIL : SAND, mouseXInWorld, mouseYInWorld);
     } 
     else if(mouseButton == CENTER)
     { 
@@ -72,9 +77,26 @@ void draw()
     //Right Click donw = water
     else if (mouseButton == RIGHT)
     { 
-      place(WATER, mouseXInWorld, mouseYInWorld);
+      place(brushToggle ? FIRE : WATER, mouseXInWorld, mouseYInWorld);
     } 
   } 
+  
+ //Element Toggle Logic
+ //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  if(keyCode == ' ')
+    {  
+      brushToggle = true; 
+      brushToggle = !brushToggle; 
+    } 
+   else
+   { 
+     brushToggle = false; 
+     brushToggle = !brushToggle; 
+   }
+    
+  if(brushToggle) { println("OIL/ ROCK / FIRE"); }
+  else { println("SAND / ROCK / WATER"); }
+  
   //Clear hasMovedFlag 
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   
@@ -97,6 +119,44 @@ void draw()
       byte SubstanceHere = world[coordHere]; 
       if(SubstanceHere == AIR || SubstanceHere == ROCK) continue; 
       
+      if(SubstanceHere == FIRE)
+      {
+        boolean fireSpreads = false; 
+        if(canMove(FIRE, x-1, y))
+        { 
+          move(x,y, x-1,y); 
+          world[coordHere] = FIRE; 
+          fireSpreads = true; 
+        }
+        
+        if(canMove(FIRE, x+1, y))
+        { 
+          move(x,y, x+1,y); 
+          world[coordHere] = FIRE;
+          fireSpreads = true;
+        }
+        
+        if(canMove(FIRE, x, y-1))
+        { 
+          move(x,y, x,y-1); 
+          world[coordHere] = FIRE;
+          fireSpreads = true;
+        }
+        
+        if(canMove(FIRE, x, y+1))
+        { 
+          move(x,y, x, y+1); 
+          world[coordHere] = FIRE;
+          fireSpreads = true;
+        }
+        
+        if(!fireSpreads) 
+        { 
+          //Burns out 
+          world[coordHere] = AIR; 
+        }
+      }
+      
       //Tile is free, move down 
       if(canMove(SubstanceHere, x, y+1))
       {  
@@ -111,7 +171,6 @@ void draw()
      
       //Sand Pixel behaviour
       /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      
       if(checkLeftFirst)
       { 
          if(canMove(SubstanceHere, x-1, y+1))
@@ -139,7 +198,7 @@ void draw()
       //Water Pixel behaviour
       ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       
-      if(SubstanceHere == WATER && y<HEIGHT-1 && world[coord(x,y+1)] == WATER)
+      if((SubstanceHere == WATER || SubstanceHere == OIL) && y<HEIGHT-1 && world[coord(x,y+1)] == SubstanceHere)
       { 
         //Above layer of water, spead the pixels out across them left & right
        if(checkLeftFirst)
@@ -183,7 +242,9 @@ void draw()
         case AIR: c = color(0, 0, 0); break; //White Colour
         case ROCK: c = color (128 ,128, 128); break; //Grey Colour
         case WATER: c = color (0, 0 ,255); break; //Blue Colour
-        case SAND: c = color (255, 204, 0); break; //Yellow Colour
+        case SAND: c = color (255, 204, 0); break; //Yellow/Orange Colour
+        case OIL: c = color (160, 70, 160); break; //Purple Colour
+        case FIRE: c = color (255,0,0); break; //Red Colour
         default: c = color (255,0, 0); break; //Red Colour (Somethings gome wrong)
     }
     
@@ -239,6 +300,11 @@ void mouseWheel(MouseEvent event)
     println("Brush size:" + brushSize); 
 } 
 
+void KeyPressed()
+{  
+    
+} 
+
 void place(byte substance, int xPos, int yPos)
 {  
   for(int y=max(0, yPos-brushSize); y<min(HEIGHT-1, yPos+brushSize); ++y){
@@ -278,8 +344,12 @@ boolean canMove(byte substance, int x, int y)
 {  
   //Dont want pixels to fall outside the boundarys of the screen
    if(x<0 || x>=WIDTH || y<0 || y>=HEIGHT) return false; 
-   byte otherSubstance = world[coord(x,y)]; 
-   if(otherSubstance == AIR) return true; 
+   byte otherSubstance = world[coord(x,y)];
+   
+   //Fire can only move is oil is present 
+   if(substance == FIRE) return (otherSubstance == OIL); 
+   
+   if(otherSubstance == AIR) return true;  
    
    //precipitate the sand when with water 
    if(substance == SAND && otherSubstance == WATER && random(1f)<0.5f) return true; 
